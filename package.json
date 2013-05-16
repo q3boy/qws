@@ -1,0 +1,36 @@
+{
+  "name": "qws",
+  "main": "index.js",
+  "version": "0.0.1",
+  "description": "An HTML5 Web Sockets Server Module",
+  "author": {
+    "name": "q3boy",
+    "email": "q3boy1@gmail.com"
+  },
+  "engines": {
+    "node": ">=0.8.0"
+  },
+  "homepage": "https://github.com/q3boy/qws",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/q3boy/qws.git"
+  },
+  "bugs": {
+    "url": "https://github.com/q3boy/qws/issues"
+  },
+  "dependencies": {
+    "options-stream": "*"
+  },
+  "devDependencies": {
+    "coffee-script": "*",
+    "mocha": "*",
+    "expect.js": "*",
+    "jscover": "*",
+    "yamljs": "*"
+  },
+  "scripts": {
+    "prepublish": "make release",
+    "postpublish": "make clean",
+    "test": "make test-cov"
+  }
+}
