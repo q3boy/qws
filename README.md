@@ -1,3 +1,3 @@
 # QWS
 
-An HTML5 Web Sockets Server Module.
+An HTML5 Web Sockets Server Module
