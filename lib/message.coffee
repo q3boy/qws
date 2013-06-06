@@ -9,6 +9,7 @@ class Message extends EventEmitter
       url                : '/ws'
       deflate            : true
       min_deflate_length : 32
+      close_timeout      : 100
     }, options
     @deflated = false
     unless true is msg = @handShake()
@@ -102,10 +103,16 @@ class Message extends EventEmitter
     return
 
   close : ->
-    # frame = new WebSocketFrame opcode : 'close'
-    # frame.pack false,(data) =>
-    @socket.end()
-
+    closed = false
+    @write '', 'close', false, =>
+      @socket.on 'close', (err)=>
+        clearTimeout timer
+        closed = true
+        @emit 'closed', err
+      timer = setTimeout =>
+        return if closed
+        @socket.end()
+      , @options.close_timeout
 
   onFrame : (frame) ->
     switch frame.opcode
@@ -125,7 +132,6 @@ class Message extends EventEmitter
 
     {path} = uinfo = urlParse req.url
     return 'protocol not match' if uinfo.protocol and uinfo.protocol isnt 'ws:'
-    # console.log req.url
     # request check
     return 'url not match' unless path is @options.url
     return 'upgrade not match' unless 'websocket' is req.headers.upgrade

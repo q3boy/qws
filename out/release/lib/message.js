@@ -25,7 +25,8 @@ Message = (function(_super) {
     this.options = os({
       url: '/ws',
       deflate: true,
-      min_deflate_length: 32
+      min_deflate_length: 32,
+      close_timeout: 100
     }, options);
     this.deflated = false;
     if (true !== (msg = this.handShake())) {
@@ -130,7 +131,25 @@ Message = (function(_super) {
   };
 
   Message.prototype.close = function() {
-    return this.socket.end();
+    var closed,
+      _this = this;
+
+    closed = false;
+    return this.write('', 'close', false, function() {
+      var timer;
+
+      _this.socket.on('close', function(err) {
+        clearTimeout(timer);
+        closed = true;
+        return _this.emit('closed', err);
+      });
+      return timer = setTimeout(function() {
+        if (closed) {
+          return;
+        }
+        return _this.socket.end();
+      }, _this.options.close_timeout);
+    });
   };
 
   Message.prototype.onFrame = function(frame) {
