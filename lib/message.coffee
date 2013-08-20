@@ -19,20 +19,21 @@ class Message extends EventEmitter
     frame = null
     socket.on 'data', (chunk)=>
       # first chunk
-      if frame is null
-        frame = unpack chunk
+      # if frame is null
+      while chunk and chunk.length
+        [frame, chunk] = unpack chunk, frame
       # 2+ chunks
-      else
-        unpack chunk, frame
+      # else
+        # [frame, buf] = unpack chunk, frame
       # if done
-      if frame.done
-        # decompress
-        inflate frame, (err, f) =>
-          return @emit 'error', err if err
-          # emit event
-          @onFrame f
-        # reset frame
-        frame = null
+        if frame.done
+          # decompress
+          inflate frame, (err, f) =>
+            return @emit 'error', err if err
+            # emit event
+            @onFrame f
+          # reset frame
+          frame = null
 
     socket.on 'error', (err)=>
       @emit 'error', err

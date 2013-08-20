@@ -103,6 +103,28 @@ describe 'WebSocket Message', ->
           process.nextTick -> s.mdata bin.slice 0, 4
           process.nextTick -> s.mdata bin.slice 4, 6
           process.nextTick -> s.mdata bin.slice 6
+      it '2 chunks 3 frames', (done) ->
+        [s, r, m] = prepare()
+        flag = 0
+        m.on 'message', (msg)->
+          switch ++flag
+            when 1 then e(msg).to.be '222'
+            when 2 then e(msg).to.be '333'
+            when 3 then e(msg).to.be '444'
+            else e(false).to.be true
+
+        setTimeout ->
+          e(flag).to.be 3
+          done()
+        , 500
+
+          # process.nextTick -> s.mdata bin.slice 4, 6
+        process.nextTick -> s.mdata  new Buffer [
+          0xc1, 0x85, 0xe8, 0x31, 0x95, 0xf2, 0xda, 0x03, 0xa7, 0xf0, 0xe8, 
+          0xc1, 0x85, 0x16, 0x49, 0xa2, 0x25, 0x24]
+        process.nextTick -> s.mdata new Buffer [0x7f, 0x94, 0x23, 0x16, 
+          0xc1, 0x85, 0xad, 0x85, 0x1a, 0x45, 0x9f, 0xb4]
+        process.nextTick -> s.mdata new Buffer [0x2b, 0x44, 0xad]
       it 'error chunk', (done)->
         [s, r, m] = prepare()
         data = new Buffer 64
@@ -137,7 +159,7 @@ describe 'WebSocket Message', ->
       s.mreset()
       txt = 'some short text'
       m.write txt, (err)->
-        inflate unpack(s.data[0]), (err, frame)->
+        inflate unpack(s.data[0])[0], (err, frame)->
           e(frame.fin).to.be true
           e(frame.rsv1).to.be false
           e(frame.data.toString()).to.be txt
@@ -150,7 +172,7 @@ describe 'WebSocket Message', ->
       txt += txt
       txt += txt
       m.write txt, (err)->
-        inflate unpack(s.data[0]), (err, frame)->
+        inflate unpack(s.data[0])[0], (err, frame)->
           e(frame.fin).to.be true
           e(frame.rsv1).to.be true
           e(frame.data.toString()).to.be txt
@@ -159,7 +181,7 @@ describe 'WebSocket Message', ->
       [s, r, m] = prepare()
       s.mreset()
       m[code] (err)->
-        frame = unpack(s.data[0])
+        frame = unpack(s.data[0])[0]
         e(frame.opcode).to.be code
         done()
     it 'ping', (done) -> opcodeTest 'ping', done
@@ -170,7 +192,7 @@ describe 'WebSocket Message', ->
       s.mreset()
       txt = 'with mask'
       m.write txt, true, (err)->
-        frame = unpack(s.data[0])
+        [frame] = unpack(s.data[0])
         e(frame.mask).to.be true
         e(frame.data.toString()).to.be txt
         done()
@@ -179,7 +201,7 @@ describe 'WebSocket Message', ->
       s.mreset()
       txt = 'with opcode and mask'
       m.write txt, 'binary', true, (err)->
-        frame = unpack(s.data[0])
+        [frame] = unpack(s.data[0])
         e(frame.opcode).to.be 'binary'
         e(frame.mask).to.be true
         e(frame.data.toString()).to.be txt
@@ -213,7 +235,7 @@ describe 'WebSocket Message', ->
       s.mreset()
       txt = 'end'
       s.on 'end', ->
-        frame = unpack(s.data[0])
+        [frame] = unpack(s.data[0])
         e(frame.data.toString()).to.be txt
         done()
       m.end txt

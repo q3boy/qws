@@ -17,6 +17,7 @@ unmask = (data, mask) ->
   d1[i+1] = data[i+1] ^ mask[0] if mod > 1
   d1[i+2] = data[i+2] ^ mask[0] if mod > 2
   d1
+  
 
 # inflate frame
 inflate = (frame, cb) ->
@@ -36,10 +37,17 @@ opcodes = [
 ]
 # unpack frame
 unpack = (buf, frame) ->
+
   # 2+ chunks
   if frame
-    frame.data.push buf
-    frame.left -= buf.length
+    if buf.length > frame.left
+      frame.data.push buf.slice 0, frame.left
+      buf = buf.slice frame.left
+      frame.left = 0
+    else 
+      frame.data.push buf
+      frame.left -= buf.length
+      buf = null
   # first chunk
   else
     b1 = buf[0]
@@ -72,9 +80,16 @@ unpack = (buf, frame) ->
       # maskkey
       frame.maskKey = buf.slice idx, idx +=4 if frame.mask
       # set data chunk
-      frame.data.push buf.slice idx
+      frame.data.push buf.slice idx, idx += frame.length
       # calc left bytes
       frame.left = frame.length - frame.data[0].length
+
+    # cut buffer
+    if buf.length > idx
+      buf = buf.slice idx
+    else 
+      buf = null
+
 
   # check done
   if frame.left is 0
@@ -89,7 +104,7 @@ unpack = (buf, frame) ->
     # remove left
     delete frame.left
 
-  frame
+  [frame, buf]
 
 pack = (frame, data) ->
   # set first byte
