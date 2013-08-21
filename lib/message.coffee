@@ -1,5 +1,6 @@
 os                       = require 'options-stream'
 crypto                   = require 'crypto'
+zlib                    = require 'zlib'
 {parse: urlParse}        = require 'url'
 {EventEmitter}           = require 'events'
 {unpack, inflate, Frame} = require './frame'
@@ -17,6 +18,7 @@ class Message extends EventEmitter
       return
 
     frame = null
+    @inflate = zlib.createInflateRaw chunkSize : 128 * 1024
     socket.on 'data', (chunk)=>
       # first chunk
       # if frame is null
@@ -28,7 +30,7 @@ class Message extends EventEmitter
       # if done
         if frame.done
           # decompress
-          inflate frame, (err, f) =>
+          inflate frame, @inflate, (err, f) =>
             return @emit 'error', err if err
             # emit event
             @onFrame f
@@ -159,7 +161,7 @@ class Message extends EventEmitter
     # use deflate
     if @options.deflate and req.headers['sec-websocket-extensions'] is 'x-webkit-deflate-frame'
       @deflated = true
-      # head += "Sec-WebSocket-Extensions: x-webkit-deflate-frame\r\n"
+      head += "Sec-WebSocket-Extensions: x-webkit-deflate-frame\r\n"
     head += "\r\n"
 
     # send response

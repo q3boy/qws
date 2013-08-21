@@ -1,5 +1,6 @@
 #mocha
 e                        = require 'expect.js'
+zlib                     = require 'zlib'
 {EventEmitter}           = require 'events'
 {Message}                = require '../lib/message'
 {Frame, unpack, inflate} = require '../lib/frame'
@@ -39,7 +40,7 @@ describe 'WebSocket Message', ->
   prepare = -> [s = new MockSocket(), r = req(), new Message(r, s)]
   describe 'hand shake', ->
     describe 'success', ->
-      xit 'with defalted', ->
+      it 'with defalted', ->
         s = new MockSocket
         m = new Message req(), s
         e(s.toString()).to.be '''
@@ -119,7 +120,7 @@ describe 'WebSocket Message', ->
                 done()
           process.nextTick -> s.mdata Buffer.concat [bin, bin.slice(0, 4)]
           process.nextTick -> s.mdata Buffer.concat [bin.slice(4), bin]
-      xit 'error chunk', (done)->
+      it 'error chunk', (done)->
         [s, r, m] = prepare()
         data = new Buffer 64
         data.fill 'a'
@@ -148,12 +149,15 @@ describe 'WebSocket Message', ->
       it 'continue', (done) -> opcodeTest 'continue', 'continue', done
       it 'close', (done)    -> opcodeTest 'close', 'close', done
   describe 'write', ->
+    inflateStream = null
+    beforeEach ->
+      inflateStream = zlib.createInflateRaw()
     it 'short text', (done) ->
       [s, r, m] = prepare()
       s.mreset()
       txt = 'some short text'
       m.write txt, (err)->
-        inflate unpack(s.data[0])[0], (err, frame)->
+        inflate unpack(s.data[0])[0], inflateStream, (err, frame)->
           e(frame.fin).to.be true
           e(frame.rsv1).to.be false
           e(frame.data.toString()).to.be txt
@@ -166,7 +170,7 @@ describe 'WebSocket Message', ->
       txt += txt
       txt += txt
       m.write txt, (err)->
-        inflate unpack(s.data[0])[0], (err, frame)->
+        inflate unpack(s.data[0])[0], inflateStream, (err, frame)->
           e(frame.fin).to.be true
           e(frame.rsv1).to.be true
           e(frame.data.toString()).to.be txt

@@ -18,12 +18,26 @@ unmask = (data, mask) ->
 
 
 # inflate frame
-inflate = (frame, cb) ->
+inflate = (frame, stream, cb) ->
   return cb null, frame unless frame.rsv1
-  zlib.inflateRaw frame.data, (err, data) ->
-    return cb err if err
+  stream.once 'error', (err) ->
+    cb err
+  stream.once 'data', (data) ->
     frame.data = data
     cb null, frame
+  len = frame.data.length
+  b = new Buffer len + 4
+  b[len] = 0x00
+  b[len+1] = 0x00
+  b[len+2] = 0xff
+  b[len+3] = 0xff
+  frame.data.copy b
+  stream.write b
+  return
+  # zlib.inflateRaw frame.data, (err, data) ->
+  #   return cb err if err
+  #   frame.data = data
+  #   cb null, frame
 
 
 # opcodes defines

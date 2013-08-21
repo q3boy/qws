@@ -27,17 +27,26 @@ unmask = function(data, mask) {
   return d1;
 };
 
-inflate = function(frame, cb) {
+inflate = function(frame, stream, cb) {
+  var b, len;
   if (!frame.rsv1) {
     return cb(null, frame);
   }
-  return zlib.inflateRaw(frame.data, function(err, data) {
-    if (err) {
-      return cb(err);
-    }
+  stream.once('error', function(err) {
+    return cb(err);
+  });
+  stream.once('data', function(data) {
     frame.data = data;
     return cb(null, frame);
   });
+  len = frame.data.length;
+  b = new Buffer(len + 4);
+  b[len] = 0x00;
+  b[len + 1] = 0x00;
+  b[len + 2] = 0xff;
+  b[len + 3] = 0xff;
+  frame.data.copy(b);
+  stream.write(b);
 };
 
 opcodes = ['continue', 'text', 'binary', 'non-control 3', 'non-control 4', 'non-control 5', 'non-control 6', ' non-control 7', 'close', 'ping', 'pong', 'control B', 'control C', 'control D', 'control E', ' control F'];
