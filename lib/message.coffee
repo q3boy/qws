@@ -159,7 +159,7 @@ class Message extends EventEmitter
     # use deflate
     if @options.deflate and req.headers['sec-websocket-extensions'] is 'x-webkit-deflate-frame'
       @deflated = true
-      head += "Sec-WebSocket-Extensions: x-webkit-deflate-frame\r\n"
+      # head += "Sec-WebSocket-Extensions: x-webkit-deflate-frame\r\n"
     head += "\r\n"
 
     # send response

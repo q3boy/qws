@@ -199,7 +199,6 @@ Message = (function(_super) {
     head = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + sign + "\r\n";
     if (this.options.deflate && req.headers['sec-websocket-extensions'] === 'x-webkit-deflate-frame') {
       this.deflated = true;
-      head += "Sec-WebSocket-Extensions: x-webkit-deflate-frame\r\n";
     }
     head += "\r\n";
     this.socket.write(head);

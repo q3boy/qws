@@ -1,8 +1,6 @@
 zlib   = require 'zlib'
 crypto = require 'crypto'
 
-
-
 # mask & unmask data
 unmask = (data, mask) ->
   d1 = new Buffer data.length
@@ -17,7 +15,7 @@ unmask = (data, mask) ->
   d1[i+1] = data[i+1] ^ mask[0] if mod > 1
   d1[i+2] = data[i+2] ^ mask[0] if mod > 2
   d1
-  
+
 
 # inflate frame
 inflate = (frame, cb) ->
@@ -35,6 +33,7 @@ opcodes = [
   'close', 'ping', 'pong'
   'control B', 'control C', 'control D', 'control E',' control F'
 ]
+
 # unpack frame
 unpack = (buf, frame) ->
 

@@ -39,7 +39,7 @@ describe 'WebSocket Message', ->
   prepare = -> [s = new MockSocket(), r = req(), new Message(r, s)]
   describe 'hand shake', ->
     describe 'success', ->
-      it 'with defalted', ->
+      xit 'with defalted', ->
         s = new MockSocket
         m = new Message req(), s
         e(s.toString()).to.be '''
@@ -106,26 +106,20 @@ describe 'WebSocket Message', ->
       it '2 chunks 3 frames', (done) ->
         [s, r, m] = prepare()
         flag = 0
-        m.on 'message', (msg)->
-          switch ++flag
-            when 1 then e(msg).to.be '222'
-            when 2 then e(msg).to.be '333'
-            when 3 then e(msg).to.be '444'
-            else e(false).to.be true
-
-        setTimeout ->
-          e(flag).to.be 3
-          done()
-        , 500
-
-          # process.nextTick -> s.mdata bin.slice 4, 6
-        process.nextTick -> s.mdata  new Buffer [
-          0xc1, 0x85, 0xe8, 0x31, 0x95, 0xf2, 0xda, 0x03, 0xa7, 0xf0, 0xe8, 
-          0xc1, 0x85, 0x16, 0x49, 0xa2, 0x25, 0x24]
-        process.nextTick -> s.mdata new Buffer [0x7f, 0x94, 0x23, 0x16, 
-          0xc1, 0x85, 0xad, 0x85, 0x1a, 0x45, 0x9f, 0xb4]
-        process.nextTick -> s.mdata new Buffer [0x2b, 0x44, 0xad]
-      it 'error chunk', (done)->
+        frame {}, (err, bin) ->
+          m.on 'message', (msg)->
+            switch ++flag
+              when 1 then e(msg).to.be 'abcabc'
+              when 2 then e(msg).to.be 'abcabc'
+              when 3 
+                e(msg).to.be 'abcabc'
+                done()
+              else 
+                e(false).to.be true
+                done()
+          process.nextTick -> s.mdata Buffer.concat [bin, bin.slice(0, 4)]
+          process.nextTick -> s.mdata Buffer.concat [bin.slice(4), bin]
+      xit 'error chunk', (done)->
         [s, r, m] = prepare()
         data = new Buffer 64
         data.fill 'a'
