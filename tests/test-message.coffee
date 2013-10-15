@@ -64,10 +64,21 @@ describe 'WebSocket Message', ->
         m = new Message req(prop), s = new MockSocket
         e(s.toString()).to.be "HTTP/1.1 400 Bad Request\r\n\r\n#{txt}\r\n"
       it 'protocol not match', -> failTest url : 'ws1://a/aa', 'protocol not match'
-      it 'url not match',      -> failTest url : '/aa'       , 'url not match'
+      # it 'url not match',      -> failTest url : '/aa'       , 'url not match'
       it 'upgrade not match',  -> failTest upgrade : 'aaa'   , 'upgrade not match'
       it 'version not match',  -> failTest version : '14'    , 'version not match'
       it 'key missed',         -> failTest key : false       , 'key missed'
+    describe 'error when url not matched', ->
+      it 'url not match', -> 
+        # try
+        e(->
+          new Message req(url : '/aa' )
+        ).to.throwException(/URLNOTMATCHED/)
+        
+        # catch e
+          # console.log  e
+        # e(s.toString()).to.be "HTTP/1.1 400 Bad Request\r\n\r\n#{txt}\r\n"
+      # failTest url : '/aa'       , 'url not match'
   describe 'got message', ->
     frame = (prop, cb)->
       f = new Frame

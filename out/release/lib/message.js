@@ -31,9 +31,16 @@ Message = (function(_super) {
     }, options);
     this.deflated = false;
     if (true !== (msg = this.handShake())) {
+      if ('url not match' === msg) {
+        throw new Error("URLNOTMATCHED");
+      }
       this.socket.end('HTTP/1.1 400 Bad Request\r\n\r\n' + msg + "\r\n");
       return;
     }
+    if (true === this.socket.__QWS_USED) {
+      return;
+    }
+    this.socket.__QWS_USED = true;
     frame = null;
     this.inflate = zlib.createInflateRaw({
       chunkSize: 128 * 1024

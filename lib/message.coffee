@@ -6,6 +6,7 @@ zlib                    = require 'zlib'
 {unpack, inflate, Frame} = require './frame'
 class Message extends EventEmitter
   constructor : (@req, @socket, options)->
+    # http can only be use one time
     @options = os {
       url                : '/ws'
       deflate            : true
@@ -14,8 +15,14 @@ class Message extends EventEmitter
     }, options
     @deflated = false
     unless true is msg = @handShake()
+      # show 400 page only when url matched, otherwise return 
+      throw new Error "URLNOTMATCHED" if 'url not match' is msg
+      
       @socket.end 'HTTP/1.1 400 Bad Request\r\n\r\n' + msg + "\r\n"
       return
+    return if true is @socket.__QWS_USED 
+    # set used flag on socket
+    @socket.__QWS_USED = true
 
     frame = null
     @inflate = zlib.createInflateRaw chunkSize : 128 * 1024
@@ -132,11 +139,11 @@ class Message extends EventEmitter
 
   handShake : ->
     req = @req
-
     {path} = uinfo = urlParse req.url
     return 'protocol not match' if uinfo.protocol and uinfo.protocol isnt 'ws:'
     # request check
     return 'url not match' unless path is @options.url
+
     return 'upgrade not match' unless 'websocket' is req.headers.upgrade
     return 'version not match'  unless '13' is req.headers['sec-websocket-version']
     return 'key missed' unless req.headers['sec-websocket-key']

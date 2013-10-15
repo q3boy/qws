@@ -9,7 +9,7 @@
 -BIN_COFFEE := ./node_modules/coffee-script/bin/coffee
 -BIN_YAML := ./node_modules/.bin/yaml2json -sp
 
--TESTS := $(shell find tests -type f -name 'test-*')
+TESTS := $(shell find tests -type f -name 'test-*')
 
 -COFFEE_LIB := $(shell find lib -type f -name '*.coffee')
 -COFFEE_TEST := $(shell find tests -type f -name 'test-*.coffee')
@@ -21,7 +21,7 @@
 -COFFEE_COVERAGE := $(addprefix $(-COVERAGE_DIR),$(-COFFEE_COVERAGE) )
 
 -COVERAGE_FILE := coverage.html
--COVERAGE_TESTS := $(addprefix $(-COVERAGE_DIR),$(-TESTS))
+-COVERAGE_TESTS := $(addprefix $(-COVERAGE_DIR),$(TESTS))
 -COVERAGE_TESTS := $(-COVERAGE_TESTS:.coffee=.js)
 
 default: dev
@@ -37,13 +37,13 @@ dev: clean json
 		--compilers coffee:coffee-script \
 		--reporter list \
 		--growl \
-		$(-TESTS)
+		$(TESTS)
 
 test: clean json
 	@$(-BIN_MOCHA) \
 		--compilers coffee:coffee-script \
 		--reporter tap \
-		$(-TESTS)
+		$(TESTS)
 
 release: dev
 	@echo 'copy files'

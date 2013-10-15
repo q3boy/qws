@@ -19,7 +19,7 @@ describe 'WebSocket Server', ->
     hs.close ->
       setTimeout done, 50
 
-  req = (bin, cb) ->
+  req = (bin, cb, cbhs) ->
     client = net.connect port:port
     client.on 'connect', ->
       client.write '''
@@ -35,6 +35,7 @@ describe 'WebSocket Server', ->
       handShake = null
       client.once 'data', (chunk)->
         handShake = chunk.toString()
+        cbhs handShake if cbhs
         client.write bin
         client.once 'data', (chunk) ->
           cb handShake, chunk if cb
@@ -54,4 +55,15 @@ describe 'WebSocket Server', ->
   it 'createFrame', ->
     f = ws.createFrame data : new Buffer [0x61, 0x62, 0x63, 0x61, 0x62, 0x63]
     e(f).to.be.a ws.Frame
+  it 'create server but url not matched', (done)->
+    w = ws.createServer hs, url : '/aa', (data, msg) ->
+      # e(data).to.be 'abc'
+      # msg.close()
+      # done()
+    req (bin = new Buffer [0x81, 0x03, 0x61, 0x62, 0x63]), null, (handShake) ->
+      # console.log handShake
+      e(handShake).to.be.match /^HTTP\/1\.1 400/
+      e(handShake).to.be.match /url not matched/
+      done()
+    # e(w).to.be.a ws.Server
 

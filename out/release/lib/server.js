@@ -20,8 +20,29 @@ Server = (function(_super) {
       deflate: true,
       min_deflate_length: 32
     }, options);
+    if (!this.server.__QWS_NUM) {
+      this.server.__QWS_NUM = 0;
+    }
+    this.server.__QWS_NUM++;
     server.on('upgrade', function(req, socket) {
-      return _this.emit('connect', new Message(req, socket, _this.options));
+      var e, msg;
+      if (!socket.__QWS_NUM) {
+        socket.__QWS_NUM = _this.server.__QWS_NUM;
+      }
+      try {
+        msg = new Message(req, socket, _this.options);
+      } catch (_error) {
+        e = _error;
+        if ('URLNOTMATCHED' === e.message) {
+          if (0 === --socket.__QWS_NUM) {
+            socket.end('HTTP/1.1 400 Bad Request\r\n\r\nurl not matched\r\n');
+            return;
+          }
+        } else {
+          throw e;
+        }
+      }
+      _this.emit('connect', msg);
     });
   }
 
