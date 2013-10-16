@@ -36,8 +36,8 @@ Server = (function(_super) {
         if ('URLNOTMATCHED' === e.message) {
           if (0 === --socket.__QWS_NUM) {
             socket.end('HTTP/1.1 400 Bad Request\r\n\r\nurl not matched\r\n');
-            return;
           }
+          return;
         } else {
           throw e;
         }

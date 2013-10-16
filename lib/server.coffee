@@ -19,7 +19,7 @@ class Server extends EventEmitter
         if 'URLNOTMATCHED' is e.message 
           if 0 is --socket.__QWS_NUM
             socket.end 'HTTP/1.1 400 Bad Request\r\n\r\nurl not matched\r\n'
-            return
+          return
         else
           throw e
         
