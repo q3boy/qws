@@ -22,63 +22,8 @@ class MockSocket extends EventEmitter
   mclose : -> @emit 'close'
   mreset : -> @data = []
 
-req = (props = {})->
-  props.defalte ?= true
-
-  r =
-    url     : props.url or '/ws'
-    headers :
-      upgrade                    : props.upgrade or 'websocket'
-      'sec-websocket-version'    : props.version or '13'
-  unless props.key is false
-    r.headers['sec-websocket-key'] = props.key or 'abcde'
-  if props.defalte
-    r.headers['sec-websocket-extensions'] = 'x-webkit-deflate-frame'
-  r
-
 describe 'WebSocket Message', ->
-  prepare = -> [s = new MockSocket(), r = req(), new Message(r, s)]
-  describe 'hand shake', ->
-    describe 'success', ->
-      it 'with defalted', ->
-        s = new MockSocket
-        m = new Message req(), s
-        e(s.toString()).to.be '''
-          HTTP/1.1 101 Switching Protocols\r
-          Upgrade: websocket\r
-          Connection: Upgrade\r
-          Sec-WebSocket-Accept: 8m4i+0BpIKblsbf+VgYANfQKX4w=\r
-          Sec-WebSocket-Extensions: x-webkit-deflate-frame\r\n\r\n
-        '''
-      it 'without defalte', ->
-        s = new MockSocket
-        m = new Message req(), s, deflate : false
-        e(s.toString()).to.be '''
-          HTTP/1.1 101 Switching Protocols\r
-          Upgrade: websocket\r
-          Connection: Upgrade\r
-          Sec-WebSocket-Accept: 8m4i+0BpIKblsbf+VgYANfQKX4w=\r\n\r\n
-        '''
-    describe 'fail when', ->
-      failTest = (prop, txt)->
-        m = new Message req(prop), s = new MockSocket
-        e(s.toString()).to.be "HTTP/1.1 400 Bad Request\r\n\r\n#{txt}\r\n"
-      it 'protocol not match', -> failTest url : 'ws1://a/aa', 'protocol not match'
-      # it 'url not match',      -> failTest url : '/aa'       , 'url not match'
-      it 'upgrade not match',  -> failTest upgrade : 'aaa'   , 'upgrade not match'
-      it 'version not match',  -> failTest version : '14'    , 'version not match'
-      it 'key missed',         -> failTest key : false       , 'key missed'
-    describe 'error when url not matched', ->
-      it 'url not match', -> 
-        # try
-        e(->
-          new Message req(url : '/aa' )
-        ).to.throwException(/URLNOTMATCHED/)
-        
-        # catch e
-          # console.log  e
-        # e(s.toString()).to.be "HTTP/1.1 400 Bad Request\r\n\r\n#{txt}\r\n"
-      # failTest url : '/aa'       , 'url not match'
+  prepare = -> [s = new MockSocket(), new Message(s)]
   describe 'got message', ->
     frame = (prop, cb)->
       f = new Frame
@@ -92,14 +37,14 @@ describe 'WebSocket Message', ->
       f.pack true, cb
     describe 'text frame', ->
       it '1 chunk', (done)->
-        [s, r, m] = prepare()
+        [s, m] = prepare()
         frame {}, (err, bin) ->
           m.on 'message', (msg)->
             e(msg).to.be 'abcabc'
             done()
           s.mdata bin
       it '2 chunks masked', (done)->
-        [s, r, m] = prepare()
+        [s, m] = prepare()
         frame {mask : true}, (err, bin) ->
           m.on 'message', (msg)->
             e(msg).to.be 'abcabc'
@@ -107,7 +52,7 @@ describe 'WebSocket Message', ->
           process.nextTick -> s.mdata bin.slice 0, 6
           process.nextTick -> s.mdata bin.slice 6
       it '3 chunks', (done)->
-        [s, r, m] = prepare()
+        [s, m] = prepare()
         frame {}, (err, bin) ->
           m.on 'message', (msg)->
             e(msg).to.be 'abcabc'
@@ -116,7 +61,7 @@ describe 'WebSocket Message', ->
           process.nextTick -> s.mdata bin.slice 4, 6
           process.nextTick -> s.mdata bin.slice 6
       it '2 chunks 3 frames', (done) ->
-        [s, r, m] = prepare()
+        [s, m] = prepare()
         flag = 0
         frame {}, (err, bin) ->
           m.on 'message', (msg)->
@@ -132,7 +77,7 @@ describe 'WebSocket Message', ->
           process.nextTick -> s.mdata Buffer.concat [bin, bin.slice(0, 4)]
           process.nextTick -> s.mdata Buffer.concat [bin.slice(4), bin]
       it 'error chunk', (done)->
-        [s, r, m] = prepare()
+        [s, m] = prepare()
         data = new Buffer 64
         data.fill 'a'
         frame {data : data}, (err, bin) ->
@@ -142,13 +87,13 @@ describe 'WebSocket Message', ->
           s.mdata bin
     describe 'other opcodes', ->
       opcodeTest = (code, event, done) ->
-        [s, r, m] = prepare()
+        [s, m] = prepare()
         frame {opcode : code}, (err, bin) ->
           m.on event, done
           s.mdata bin
 
       it 'binary', (done) ->
-        [s, r, m] = prepare()
+        [s, m] = prepare()
         frame {opcode : 'binary'}, (err, bin) ->
           m.on 'message', (msg)->
             e(msg).to.be.a Buffer
@@ -164,7 +109,7 @@ describe 'WebSocket Message', ->
     beforeEach ->
       inflateStream = zlib.createInflateRaw()
     it 'short text', (done) ->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       s.mreset()
       txt = 'some short text'
       m.write txt, (err)->
@@ -174,7 +119,7 @@ describe 'WebSocket Message', ->
           e(frame.data.toString()).to.be txt
           done()
     it 'long text', (done) ->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       s.mreset()
       txt = 'some long text'
       txt += txt
@@ -187,7 +132,7 @@ describe 'WebSocket Message', ->
           e(frame.data.toString()).to.be txt
           done()
     opcodeTest = (code, done) ->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       s.mreset()
       m[code] (err)->
         frame = unpack(s.data[0])[0]
@@ -197,7 +142,7 @@ describe 'WebSocket Message', ->
     it 'pong', (done) -> opcodeTest 'pong', done
     it 'continue', (done) -> opcodeTest 'continue', done
     it 'with mask', (done) ->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       s.mreset()
       txt = 'with mask'
       m.write txt, true, (err)->
@@ -206,7 +151,7 @@ describe 'WebSocket Message', ->
         e(frame.data.toString()).to.be txt
         done()
     it 'with opcode and mask', (done) ->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       s.mreset()
       txt = 'with opcode and mask'
       m.write txt, 'binary', true, (err)->
@@ -216,12 +161,12 @@ describe 'WebSocket Message', ->
         e(frame.data.toString()).to.be txt
         done()
     it 'write raw', ->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       s.mreset()
       m.writeRaw new Buffer 'abc'
       e(s.data[0].toString()).to.be 'abc'
     it 'opcode error', (done) ->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       s.mreset()
       m.write '', 'some others', (err)->
         e(err).to.be.an Error
@@ -229,18 +174,18 @@ describe 'WebSocket Message', ->
         done()
   describe 'others case', ->
     it 'pass error from socket', (done)->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       etxt = 'err'
       m.on 'error', (err) ->
         e(err).to.be etxt
         done()
       s.merror etxt
     it 'pass close from socket', (done)->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       m.on 'close', done
       s.mclose()
     it 'end with data', (done)->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       s.mreset()
       txt = 'end'
       s.on 'end', ->
@@ -249,10 +194,10 @@ describe 'WebSocket Message', ->
         done()
       m.end txt
     it 'end without data', (done)->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       s.on 'end', done
       m.end()
     it 'close', (done)->
-      [s, r, m] = prepare()
+      [s, m] = prepare()
       s.on 'end', done
       m.close()

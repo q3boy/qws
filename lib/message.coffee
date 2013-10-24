@@ -1,28 +1,15 @@
 os                       = require 'options-stream'
-crypto                   = require 'crypto'
-zlib                    = require 'zlib'
-{parse: urlParse}        = require 'url'
+zlib                     = require 'zlib'
 {EventEmitter}           = require 'events'
 {unpack, inflate, Frame} = require './frame'
 class Message extends EventEmitter
-  constructor : (@req, @socket, options)->
+  constructor : (@socket, options)->
     # http can only be use one time
     @options = os {
-      url                : '/ws'
       deflate            : true
       min_deflate_length : 32
       close_timeout      : 100
     }, options
-    @deflated = false
-    unless true is msg = @handShake()
-      # show 400 page only when url matched, otherwise return 
-      throw new Error "URLNOTMATCHED" if 'url not match' is msg
-      
-      @socket.end 'HTTP/1.1 400 Bad Request\r\n\r\n' + msg + "\r\n"
-      return
-    return if true is @socket.__QWS_USED 
-    # set used flag on socket
-    @socket.__QWS_USED = true
 
     frame = null
     @inflate = zlib.createInflateRaw chunkSize : 128 * 1024
@@ -79,7 +66,7 @@ class Message extends EventEmitter
       mask             : mask
       minDeflateLength : @options.min_deflate_length
     # pack
-    frame.pack @deflated, (err, bin) =>
+    frame.pack @options.deflate, (err, bin) =>
       if err
         cb err if cb
         return
@@ -137,41 +124,12 @@ class Message extends EventEmitter
       # else @emit 'control', frame.opcode
     return
 
-  handShake : ->
-    req = @req
-    {path} = uinfo = urlParse req.url
-    return 'protocol not match' if uinfo.protocol and uinfo.protocol isnt 'ws:'
-    # request check
-    return 'url not match' unless path is @options.url
+  reset : (options) ->
+    @options = os @options, options
+    @__QWS_CB = options.cb
 
-    return 'upgrade not match' unless 'websocket' is req.headers.upgrade
-    return 'version not match'  unless '13' is req.headers['sec-websocket-version']
-    return 'key missed' unless req.headers['sec-websocket-key']
+  errorHandle : (msg) ->
+    @write msg if msg
+    @close()
 
-    # sign
-    key  = req.headers['sec-websocket-key']
-    sha1 = crypto.createHash 'sha1'
-    sha1.update key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
-    sign = sha1.digest 'base64'
-
-    # response header
-    head = """
-      HTTP/1.1 101 Switching Protocols\r
-      Upgrade: websocket\r
-      Connection: Upgrade\r
-      Sec-WebSocket-Accept: #{sign}\r\n
-    """
-
-    # handOrigin
-    # self.client.send("Sec-WebSocket-Origin: " + headers["Origin"] + "\r\n")
-
-    # use deflate
-    if @options.deflate and req.headers['sec-websocket-extensions'] is 'x-webkit-deflate-frame'
-      @deflated = true
-      head += "Sec-WebSocket-Extensions: x-webkit-deflate-frame\r\n"
-    head += "\r\n"
-
-    # send response
-    @socket.write head
-    true
 exports.Message = Message
