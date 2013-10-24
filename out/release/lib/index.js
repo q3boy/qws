@@ -6,13 +6,17 @@ module.exports = exports = {
       cb = options;
       options = null;
     }
-    var server = new Server(http, options);
-    if (typeof cb === 'function') {
-      server.on('connect', function(msg){
-        msg.on('message', cb);
-      });
+    if (!http.__QWS_SERVER) {
+      http.__QWS_SERVER = new Server(http, options, cb);
+      if (typeof cb === 'function') {
+        http.__QWS_SERVER.on('connect', function(msg){
+          msg.on('message', msg.__QWS_CB);
+        });
+      }
+    } else {
+      http.__QWS_SERVER.addServer(options, cb);
     }
-    return server;
+    return http.__QWS_SERVER;
   },
   Server : Server,
   createFrame : function(props) {
