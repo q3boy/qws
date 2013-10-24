@@ -9,43 +9,39 @@ class Server extends EventEmitter
     @addServer options, cb
 
     server.on 'upgrade', (req, socket) =>
-      unless true is result = @_handShake req, socket
+      if result = @_handShake req, socket
         socket.end "HTTP/1.1 400 Bad Request\r\n\r\n#{result}\r\n"
         return
 
-      try 
-        msg = new Message socket, {deflate:false}
-      catch e
-        throw e
+      msg = new Message socket, {deflate:false}
 
       {path} = urlParse req.url
-      num = @serverConfigList.length
 
       for config in @serverConfigList
         if path is config.url
-          unless true is result = @_domainCheck req, config
-            msg.write "HTTP/1.1 403 Forbidden\r\n\r\n#{result}\r\n"
-            msg.close()
+          if result = @_domainCheck req, config
+            msg.errorHandle "HTTP/1.1 403 Forbidden\r\n\r\n#{result}\r\n"
             return
-          msg.options = os msg.options, config
-          msg.__QWS_CB = config.__cb
-          break
-        else if 0 is --num
-          msg.write 'HTTP/1.1 400 Bad Request\r\n\r\nurl not matched\r\n'
-          msg.close()
-          return
+          msg.reset config
+          return @emit 'connect', msg
 
-      @emit 'connect', msg
+      msg.errorHandle 'HTTP/1.1 400 Bad Request\r\n\r\nurl not matched\r\n'
       return
 
   addServer : (options, cb) ->
-    @serverConfigList.push os {
+    serverConfig = os {
       url                : '/ws'
       deflate            : false
       min_deflate_length : 32
       origins            : []
-      __cb               : cb
+      cb                 : cb
     }, options
+
+    if serverConfig.origins.length
+      serverConfig.origins[i] = origin.replace /\/$/g, '' for origin, i in serverConfig.origins
+
+    @serverConfigList.push serverConfig
+
 
   _handShake : (req, socket) ->
     uinfo = urlParse req.url
@@ -71,19 +67,17 @@ class Server extends EventEmitter
       Sec-WebSocket-Location: ws://#{req.headers.host + req.url}\r\n\r\n
     """
     socket.write head
-    true
+    false
 
   _domainCheck : (req, config) ->
     origins = config.origins
     {host} = urlParse req.headers.origin
-    flag = false
+    reqOrigin = req.headers.origin.replace /\/$/g, ''
 
     if host isnt req.headers.host
       for origin in origins
-        if origin.replace(/\/$/, '') is req.headers.origin
-          flag = true
-          break
-      return "Origin #{req.headers.origin} is not allowed" unless flag
-    true
+        return false if origin is reqOrigin
+      return "Origin #{req.headers.origin} is not allowed"
+    false
 
 exports.Server = Server

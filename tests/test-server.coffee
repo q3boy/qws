@@ -129,7 +129,7 @@ describe 'WebSocket handShake', ->
           Sec-WebSocket-Location: ws://localhost:8080/ws\r\n\r\n
         '''
       it 'with cross domain', ->
-        ws.createServer hs, origins : ['http://a/aa'], (data, msg) ->
+        ws.createServer hs, origins : ['http://a/aa/'], (data, msg) ->
         s = new MockSocket
         hs.emit 'upgrade', req(origin : 'http://a/aa'), s
         e(s.toString()).to.be '''

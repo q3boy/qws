@@ -124,4 +124,12 @@ class Message extends EventEmitter
       # else @emit 'control', frame.opcode
     return
 
+  reset : (options) ->
+    @options = os @options, options
+    @__QWS_CB = options.cb
+
+  errorHandle : (msg) ->
+    @write msg if msg
+    @close()
+
 exports.Message = Message

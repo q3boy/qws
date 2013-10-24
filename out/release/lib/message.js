@@ -167,6 +167,18 @@ Message = (function(_super) {
     }
   };
 
+  Message.prototype.reset = function(options) {
+    this.options = os(this.options, options);
+    return this.__QWS_CB = options.cb;
+  };
+
+  Message.prototype.errorHandle = function(msg) {
+    if (msg) {
+      this.write(msg);
+    }
+    return this.close();
+  };
+
   return Message;
 
 })(EventEmitter);
