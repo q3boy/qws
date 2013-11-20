@@ -30,7 +30,7 @@ Server = (function(_super) {
       msg = new Message(socket, {
         deflate: false
       });
-      msg.req = req;
+      msg.request = req;
       path = urlParse(req.url).path;
       _ref = _this.serverConfigList;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {

@@ -14,7 +14,7 @@ class Server extends EventEmitter
         return
 
       msg = new Message socket, {deflate:false}
-      msg.req = req
+      msg.request = req
 
       {path} = urlParse req.url
 
