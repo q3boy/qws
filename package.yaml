@@ -1,12 +1,12 @@
 name: qws
 main: index.js
-version: 0.0.7
+version: 0.0.9
 description: 'An HTML5 Web Sockets Server Module'
 author:
   name: q3boy
   email: q3boy1@gmail.com
 engines:
-  node: >=0.8.0
+  node: >=0.10.0
 homepage: https://github.com/q3boy/qws
 repository:
   type: git

@@ -37,6 +37,7 @@ dev: clean json
 		--compilers coffee:coffee-script \
 		--reporter list \
 		--growl \
+		--watch \
 		$(TESTS)
 
 test: clean json
