@@ -46,7 +46,7 @@ test: clean json
 		--reporter tap \
 		$(TESTS)
 
-release: dev
+release: test
 	@echo 'copy files'
 	@mkdir -p $(-RELEASE_DIR)
 	@cp -r $(-RELEASE_COPY) $(-RELEASE_DIR)
