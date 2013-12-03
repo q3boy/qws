@@ -141,6 +141,19 @@ describe 'WebSocket handShake', ->
           Sec-WebSocket-Origin: http://a/aa\r
           Sec-WebSocket-Location: ws://localhost:8080/ws\r\n\r\n
         '''
+      it 'with cross domain *', ->
+        ws.createServer hs, origins : ['*'], (data, msg) ->
+        s = new MockSocket
+        hs.emit 'upgrade', req(origin : 'http://a/aa'), s
+        e(s.toString()).to.be '''
+          HTTP/1.1 101 Switching Protocols\r
+          Upgrade: websocket\r
+          Connection: Upgrade\r
+          Sec-WebSocket-Accept: 8m4i+0BpIKblsbf+VgYANfQKX4w=\r
+          Sec-WebSocket-Extensions: x-webkit-deflate-frame\r
+          Sec-WebSocket-Origin: http://a/aa\r
+          Sec-WebSocket-Location: ws://localhost:8080/ws\r\n\r\n
+        '''
       it 'with two servers', ->
         ws.createServer hs, (data, msg) ->
         ws.createServer hs, url : '/test', (data, msg) ->
