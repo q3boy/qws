@@ -77,7 +77,7 @@ class Server extends EventEmitter
 
     if host isnt req.headers.host
       for origin in origins
-        return false if origin is reqOrigin
+        return false if origin is '*' or origin is reqOrigin
       return "Origin #{req.headers.origin} is not allowed"
     false
 
