@@ -34,7 +34,7 @@ json:
 dev: clean json
 	@$(-BIN_MOCHA) \
 		--colors \
-		--compilers coffee:coffee-script \
+		--compilers coffee:coffee-script/register \
 		--reporter list \
 		--growl \
 		--watch \
@@ -42,7 +42,7 @@ dev: clean json
 
 test: clean json
 	@$(-BIN_MOCHA) \
-		--compilers coffee:coffee-script \
+		--compilers coffee:coffee-script/register \
 		--reporter tap \
 		$(TESTS)
 

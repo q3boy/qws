@@ -8,6 +8,7 @@ class Server extends EventEmitter
     @serverConfigList = []
     @addServer options, cb
 
+    { server }  = @
     server.on 'upgrade', (req, socket) =>
       if result = @_handShake req, socket
         socket.end "HTTP/1.1 400 Bad Request\r\n\r\n#{result}\r\n"
