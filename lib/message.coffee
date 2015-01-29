@@ -12,6 +12,8 @@ class Message extends EventEmitter
     }, options
 
     frame = null
+
+    { socket } = @
     @inflate = zlib.createInflateRaw chunkSize : 128 * 1024
     socket.on 'data', (chunk)=>
       # first chunk
