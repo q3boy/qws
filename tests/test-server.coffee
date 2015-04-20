@@ -28,7 +28,6 @@ describe 'WebSocket Server', ->
         Host: localhost:8080
         Sec-WebSocket-Key: TtP40xnf6AdhK2cpyo7vCw==
         Upgrade: websocket
-        Sec-WebSocket-Extensions: x-webkit-deflate-frame
         Connection: Upgrade
         Sec-WebSocket-Version: 13\r\n\r\n
       '''
@@ -96,7 +95,8 @@ req = (props = {})->
       'host'                     : 'localhost:8080'
   unless props.key is false
     r.headers['sec-websocket-key'] = props.key or 'abcde'
-  r.headers['sec-websocket-extensions'] = 'x-webkit-deflate-frame'
+  if props.protocol
+    r.headers['sec-websocket-protocol'] = props.protocol
   r
 
 describe 'WebSocket handShake', ->
@@ -115,7 +115,7 @@ describe 'WebSocket handShake', ->
 
   describe 'hand shake', ->
     describe 'success', ->
-      it 'without cross domain', ->
+      it 'without protocol & cross domain', ->
         ws.createServer hs, (data, msg) ->
         s = new MockSocket
         hs.emit 'upgrade', req(), s
@@ -124,8 +124,20 @@ describe 'WebSocket handShake', ->
           Upgrade: websocket\r
           Connection: Upgrade\r
           Sec-WebSocket-Accept: 8m4i+0BpIKblsbf+VgYANfQKX4w=\r
-          Sec-WebSocket-Extensions: x-webkit-deflate-frame\r
           Sec-WebSocket-Origin: http://localhost:8080\r
+          Sec-WebSocket-Location: ws://localhost:8080/ws\r\n\r\n
+        '''
+      it 'with protocol', ->
+        ws.createServer hs, (data, msg) ->
+        s = new MockSocket
+        hs.emit 'upgrade', req(protocol : 'aaa'), s
+        e(s.toString()).to.be '''
+          HTTP/1.1 101 Switching Protocols\r
+          Upgrade: websocket\r
+          Connection: Upgrade\r
+          Sec-WebSocket-Accept: 8m4i+0BpIKblsbf+VgYANfQKX4w=\r
+          Sec-WebSocket-Origin: http://localhost:8080\r
+          Sec-WebSocket-Protocol: aaa\r
           Sec-WebSocket-Location: ws://localhost:8080/ws\r\n\r\n
         '''
       it 'with cross domain', ->
@@ -137,7 +149,6 @@ describe 'WebSocket handShake', ->
           Upgrade: websocket\r
           Connection: Upgrade\r
           Sec-WebSocket-Accept: 8m4i+0BpIKblsbf+VgYANfQKX4w=\r
-          Sec-WebSocket-Extensions: x-webkit-deflate-frame\r
           Sec-WebSocket-Origin: http://a/aa\r
           Sec-WebSocket-Location: ws://localhost:8080/ws\r\n\r\n
         '''
@@ -150,7 +161,6 @@ describe 'WebSocket handShake', ->
           Upgrade: websocket\r
           Connection: Upgrade\r
           Sec-WebSocket-Accept: 8m4i+0BpIKblsbf+VgYANfQKX4w=\r
-          Sec-WebSocket-Extensions: x-webkit-deflate-frame\r
           Sec-WebSocket-Origin: http://a/aa\r
           Sec-WebSocket-Location: ws://localhost:8080/ws\r\n\r\n
         '''
@@ -164,7 +174,6 @@ describe 'WebSocket handShake', ->
           Upgrade: websocket\r
           Connection: Upgrade\r
           Sec-WebSocket-Accept: 8m4i+0BpIKblsbf+VgYANfQKX4w=\r
-          Sec-WebSocket-Extensions: x-webkit-deflate-frame\r
           Sec-WebSocket-Origin: http://localhost:8080\r
           Sec-WebSocket-Location: ws://localhost:8080/test\r\n\r\n
         '''
@@ -179,7 +188,7 @@ describe 'WebSocket handShake', ->
       it 'version not match',  -> failTest version : '14'    , 'version not match'
       it 'key missed',         -> failTest key : false       , 'key missed'
     describe 'error when', ->
-      it 'domain is not allowed', -> 
+      it 'domain is not allowed', ->
         ws.createServer hs, (data, msg) ->
         s = new MockSocket
         hs.emit 'upgrade', req(origin : 'http://a/aa'), s
@@ -188,7 +197,6 @@ describe 'WebSocket handShake', ->
           Upgrade: websocket\r
           Connection: Upgrade\r
           Sec-WebSocket-Accept: 8m4i+0BpIKblsbf+VgYANfQKX4w=\r
-          Sec-WebSocket-Extensions: x-webkit-deflate-frame\r
           Sec-WebSocket-Origin: http://a/aa\r
           Sec-WebSocket-Location: ws://localhost:8080/ws\r\n\r
           \ufffd=HTTP/1.1 403 Forbidden\r\n\r

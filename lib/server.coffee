@@ -51,6 +51,7 @@ class Server extends EventEmitter
     return 'upgrade not match' unless 'websocket' is req.headers.upgrade
     return 'version not match'  unless '13' is req.headers['sec-websocket-version']
     return 'key missed' unless req.headers['sec-websocket-key']
+    protocol = req.headers['sec-websocket-protocol']
 
     # sign
     key  = req.headers['sec-websocket-key']
@@ -64,10 +65,9 @@ class Server extends EventEmitter
       Upgrade: websocket\r
       Connection: Upgrade\r
       Sec-WebSocket-Accept: #{sign}\r
-      Sec-WebSocket-Extensions: x-webkit-deflate-frame\r
-      Sec-WebSocket-Origin: #{req.headers.origin}\r
-      Sec-WebSocket-Location: ws://#{req.headers.host + req.url}\r\n\r\n
-    """
+      Sec-WebSocket-Origin: #{req.headers.origin}\r\n"""
+    head += "Sec-WebSocket-Protocol: #{protocol}\r\n" if protocol
+    head += "Sec-WebSocket-Location: ws://#{req.headers.host + req.url}\r\n\r\n"
     socket.write head
     false
 
